@@ -26,6 +26,8 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: checkout code
+      uses: actions/checkout@v6
     - name: Responder a Issues
       if: github.event_name == 'issues' && github.event.action == 'opened'
       shell: bash
