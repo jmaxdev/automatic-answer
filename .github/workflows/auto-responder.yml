@@ -16,6 +16,9 @@ jobs:
     name: Auto-responder a issues y PRs
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Run Auto-Responder
         uses: ./.github/actions/automatic-answer
         with:
