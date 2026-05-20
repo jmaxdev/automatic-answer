@@ -1,4 +1,4 @@
-name: "Bot Auto-Responder"
+name: "Bot Auto-Answer"
 
 on:
   issues:
@@ -11,20 +11,17 @@ permissions:
   pull-requests: write
 
 jobs:
-  auto-respond:
+  auto-answer:
     runs-on: ubuntu-22.04
-    name: Auto-responder a issues y PRs
+    name: Auto-answer a issues & PRs
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Run Auto-Responder
         uses: ./.github/actions/automatic-answer
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_comment: '¡Gracias por crear este issue! 🙌\n\nNuestro equipo lo revisará pronto.'
-          pr_comment: '¡Gracias por tu PR! 🚀\n\nEstaremos revisándolo en breve.'
-          issue_label: "triage"
-          pr_label: "review-needed"
-          add_labels: "true"
+          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN || '' }}
+          use_personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
+          issue_comment: "Thank you for creating this issue! Our team will review it soon."
+          pr_comment: "Thank you for your PR! We will review it shortly."
+          add_labels: false

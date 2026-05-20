@@ -1,38 +1,79 @@
-name: "GitHub Bot Auto-Responder"
-description: "Responde automáticamente a PRs e issues con comentarios y agrega labels"
+name: "GitHub Bot Auto-Answer"
+description: "Auto answer to issues and PRs"
 
 inputs:
   token:
-    description: "GitHub token para autenticación"
+    description: "GitHub token for authentication"
     required: true
   issue_comment:
-    description: "Mensaje personalizado para responder en issues"
+    description: "Custom message to respond to issues"
     required: false
-    default: '¡Gracias por crear este issue! 🙌\n\nNuestro equipo lo revisará pronto.'
+    default: "Thank you for creating this issue! Our team will review it soon."
   pr_comment:
-    description: "Mensaje personalizado para responder en PRs"
+    description: "Custom message to respond to PRs"
     required: false
-    default: '¡Gracias por tu PR! 🚀\n\nEstaremos revisándolo en breve.'
+    default: "Thank you for your PR! We will review it shortly."
   issue_label:
-    description: "Label a agregar en issues"
+    description: "Label to add to issues"
     required: false
     default: "triage"
   pr_label:
-    description: "Label a agregar en PRs"
+    description: "Label to add to PRs"
     required: false
     default: "review-needed"
   add_labels:
-    description: "Agregar labels automáticamente (true/false)"
+    description: "Add labels automatically (true/false)"
     required: false
     type: boolean
     default: false
+  use_personal_token:
+    description: "Enable personal token for respond"
+    required: false
+    type: boolean
+    default: false
+  personal_token:
+    description: "GitHub personal token"
+    required: false
+    type: string
+    default: ""
 
 runs:
   using: "composite"
   steps:
  
-    - name: Responder a Issues
-      if: github.event_name == 'issues' && github.event.action == 'opened'
+    - name: Respond to Issues (Personal Token)
+      if: github.event_name == 'issues' && github.event.action == 'opened' && inputs.use_personal_token == true
+      shell: bash
+      env:
+        AUTHOR_TOKEN: ${{ inputs.personal_token }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        ISSUE_COMMENT: ${{ inputs.issue_comment }}
+        ISSUE_LABEL: ${{ inputs.issue_label }}
+        ADD_LABELS: ${{ inputs.add_labels }}
+      run: |
+        echo "👤 Responding as a user with personal token in issue #$ISSUE_NUMBER"
+        
+        if [[ -z "$AUTHOR_TOKEN" ]]; then
+          echo "::warning::No PERSONAL_ACCESS_TOKEN configured. Omitting personal comment."
+          exit 0
+        fi
+        
+        # Comment with personal token
+        GH_TOKEN="$AUTHOR_TOKEN" gh issue comment "$ISSUE_NUMBER" \
+          --repo "$GITHUB_REPOSITORY" \
+          --body "$ISSUE_COMMENT"
+        echo "✅ Comment personal added to issue #$ISSUE_NUMBER"
+        
+        # Add label if enabled
+        if [[ "$ADD_LABELS" == "true" && -n "$ISSUE_LABEL" ]]; then
+          GH_TOKEN="$AUTHOR_TOKEN" gh issue edit "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-label "$ISSUE_LABEL" || echo "⚠️ Label '$ISSUE_LABEL' podría no existir"
+          echo "✅ Label '$ISSUE_LABEL' agregado"
+        fi
+    
+    - name: Respond to Issues (Bot Token)
+      if: github.event_name == 'issues' && github.event.action == 'opened' && inputs.use_personal_token != true
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -41,24 +82,55 @@ runs:
         ISSUE_LABEL: ${{ inputs.issue_label }}
         ADD_LABELS: ${{ inputs.add_labels }}
       run: |
-        echo "🤖 Bot procesando issue #$ISSUE_NUMBER"
+        echo "🤖 Bot processing issue #$ISSUE_NUMBER"
 
-        # Comentar en el issue
+        # Comment in the issue
         gh issue comment "$ISSUE_NUMBER" \
           --repo "$GITHUB_REPOSITORY" \
           --body "$ISSUE_COMMENT"
-        echo "✅ Comentario agregado al issue #$ISSUE_NUMBER"
+        echo "✅ Comment bot added to issue #$ISSUE_NUMBER"
 
-        # Agregar label si está habilitado
+        # Add label if enabled
         if [[ "$ADD_LABELS" == "true" && -n "$ISSUE_LABEL" ]]; then
           gh issue edit "$ISSUE_NUMBER" \
             --repo "$GITHUB_REPOSITORY" \
             --add-label "$ISSUE_LABEL" || echo "⚠️ Label '$ISSUE_LABEL' podría no existir"
-          echo "✅ Label '$ISSUE_LABEL' agregado"
+          echo "✅ Label '$ISSUE_LABEL' added"
         fi
 
-    - name: Responder a Pull Requests
-      if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    - name: Respond to Pull Requests (Personal Token)
+      if: github.event_name == 'pull_request' && github.event.action == 'opened' && inputs.use_personal_token == true
+      shell: bash
+      env:
+        AUTHOR_TOKEN: ${{ inputs.personal_token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_COMMENT: ${{ inputs.pr_comment }}
+        PR_LABEL: ${{ inputs.pr_label }}
+        ADD_LABELS: ${{ inputs.add_labels }}
+      run: |
+        echo "👤 Responding as a user with personal token in PR #$PR_NUMBER"
+        
+        if [[ -z "$AUTHOR_TOKEN" ]]; then
+          echo "::warning::No PERSONAL_ACCESS_TOKEN configured. Omitting personal comment."
+          exit 0
+        fi
+        
+        # Comment with personal token
+        GH_TOKEN="$AUTHOR_TOKEN" gh pr comment "$PR_NUMBER" \
+          --repo "$GITHUB_REPOSITORY" \
+          --body "$PR_COMMENT"
+        echo "✅ Comment personal added to PR #$PR_NUMBER"
+        
+        # Agregar label si está habilitado
+        if [[ "$ADD_LABELS" == "true" && -n "$PR_LABEL" ]]; then
+          GH_TOKEN="$AUTHOR_TOKEN" gh pr edit "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-label "$PR_LABEL" || echo "⚠️ Label '$PR_LABEL' podría no existir"
+          echo "✅ Label '$PR_LABEL' agregado"
+        fi
+    
+    - name: Respond to Pull Requests (Bot Token)
+      if: github.event_name == 'pull_request' && github.event.action == 'opened' && inputs.use_personal_token != true
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -67,18 +139,18 @@ runs:
         PR_LABEL: ${{ inputs.pr_label }}
         ADD_LABELS: ${{ inputs.add_labels }}
       run: |
-        echo "🤖 Bot procesando PR #$PR_NUMBER"
+        echo "🤖 Bot processing PR #$PR_NUMBER"
 
-        # Comentar en el PR
+        # Comment in the PR
         gh pr comment "$PR_NUMBER" \
           --repo "$GITHUB_REPOSITORY" \
           --body "$PR_COMMENT"
-        echo "✅ Comentario agregado al PR #$PR_NUMBER"
+        echo "✅ Comment bot added to PR #$PR_NUMBER"
 
-        # Agregar label si está habilitado
+        # Add label if enabled
         if [[ "$ADD_LABELS" == "true" && -n "$PR_LABEL" ]]; then
           gh pr edit "$PR_NUMBER" \
             --repo "$GITHUB_REPOSITORY" \
             --add-label "$PR_LABEL" || echo "⚠️ Label '$PR_LABEL' podría no existir"
-          echo "✅ Label '$PR_LABEL' agregado"
+          echo "✅ Label '$PR_LABEL' added"
         fi
