@@ -22,6 +22,7 @@ jobs:
       - name: Run Auto-Responder
         uses: ./.github/actions/automatic-answer
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           issue_comment: '¡Gracias por crear este issue! 🙌\n\nNuestro equipo lo revisará pronto.'
           pr_comment: '¡Gracias por tu PR! 🚀\n\nEstaremos revisándolo en breve.'
           issue_label: "triage"

@@ -2,6 +2,9 @@ name: "GitHub Bot Auto-Responder"
 description: "Responde automáticamente a PRs e issues con comentarios y agrega labels"
 
 inputs:
+  token:
+    description: "GitHub token para autenticación"
+    required: true
   issue_comment:
     description: "Mensaje personalizado para responder en issues"
     required: false
@@ -21,7 +24,8 @@ inputs:
   add_labels:
     description: "Agregar labels automáticamente (true/false)"
     required: false
-    default: "true"
+    type: boolean
+    default: false
 
 runs:
   using: "composite"
@@ -31,7 +35,7 @@ runs:
       if: github.event_name == 'issues' && github.event.action == 'opened'
       shell: bash
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.token }}
         ISSUE_NUMBER: ${{ github.event.issue.number }}
         ISSUE_COMMENT: ${{ inputs.issue_comment }}
         ISSUE_LABEL: ${{ inputs.issue_label }}
@@ -57,7 +61,7 @@ runs:
       if: github.event_name == 'pull_request' && github.event.action == 'opened'
       shell: bash
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.token }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
         PR_COMMENT: ${{ inputs.pr_comment }}
         PR_LABEL: ${{ inputs.pr_label }}
