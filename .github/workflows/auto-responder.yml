@@ -12,12 +12,12 @@ permissions:
 
 jobs:
   auto-respond:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     name: Auto-responder a issues y PRs
 
     steps:
       - name: Run Auto-Responder
-        uses: ./.github/actions/auto-responder
+        uses: ./.github/actions/automatic-answer
         with:
           issue_comment: '¡Gracias por crear este issue! 🙌\n\nNuestro equipo lo revisará pronto.'
           pr_comment: '¡Gracias por tu PR! 🚀\n\nEstaremos revisándolo en breve.'
