@@ -1,0 +1,79 @@
+name: "GitHub Bot Auto-Responder"
+description: "Responde automáticamente a PRs e issues con comentarios y agrega labels"
+
+inputs:
+  issue_comment:
+    description: "Mensaje personalizado para responder en issues"
+    required: false
+    default: '¡Gracias por crear este issue! 🙌\n\nNuestro equipo lo revisará pronto.'
+  pr_comment:
+    description: "Mensaje personalizado para responder en PRs"
+    required: false
+    default: '¡Gracias por tu PR! 🚀\n\nEstaremos revisándolo en breve.'
+  issue_label:
+    description: "Label a agregar en issues"
+    required: false
+    default: "triage"
+  pr_label:
+    description: "Label a agregar en PRs"
+    required: false
+    default: "review-needed"
+  add_labels:
+    description: "Agregar labels automáticamente (true/false)"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Responder a Issues
+      if: github.event_name == 'issues' && github.event.action == 'opened'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        ISSUE_COMMENT: ${{ inputs.issue_comment }}
+        ISSUE_LABEL: ${{ inputs.issue_label }}
+        ADD_LABELS: ${{ inputs.add_labels }}
+      run: |
+        echo "🤖 Bot procesando issue #$ISSUE_NUMBER"
+
+        # Comentar en el issue
+        gh issue comment "$ISSUE_NUMBER" \
+          --repo "$GITHUB_REPOSITORY" \
+          --body "$ISSUE_COMMENT"
+        echo "✅ Comentario agregado al issue #$ISSUE_NUMBER"
+
+        # Agregar label si está habilitado
+        if [[ "$ADD_LABELS" == "true" && -n "$ISSUE_LABEL" ]]; then
+          gh issue edit "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-label "$ISSUE_LABEL" || echo "⚠️ Label '$ISSUE_LABEL' podría no existir"
+          echo "✅ Label '$ISSUE_LABEL' agregado"
+        fi
+
+    - name: Responder a Pull Requests
+      if: github.event_name == 'pull_request' && github.event.action == 'opened'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_COMMENT: ${{ inputs.pr_comment }}
+        PR_LABEL: ${{ inputs.pr_label }}
+        ADD_LABELS: ${{ inputs.add_labels }}
+      run: |
+        echo "🤖 Bot procesando PR #$PR_NUMBER"
+
+        # Comentar en el PR
+        gh pr comment "$PR_NUMBER" \
+          --repo "$GITHUB_REPOSITORY" \
+          --body "$PR_COMMENT"
+        echo "✅ Comentario agregado al PR #$PR_NUMBER"
+
+        # Agregar label si está habilitado
+        if [[ "$ADD_LABELS" == "true" && -n "$PR_LABEL" ]]; then
+          gh pr edit "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-label "$PR_LABEL" || echo "⚠️ Label '$PR_LABEL' podría no existir"
+          echo "✅ Label '$PR_LABEL' agregado"
+        fi

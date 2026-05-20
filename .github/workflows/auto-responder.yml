@@ -1,0 +1,26 @@
+name: "Bot Auto-Responder"
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  auto-respond:
+    runs-on: ubuntu-latest
+    name: Auto-responder a issues y PRs
+
+    steps:
+      - name: Run Auto-Responder
+        uses: ./.github/actions/auto-responder
+        with:
+          issue_comment: '¡Gracias por crear este issue! 🙌\n\nNuestro equipo lo revisará pronto.'
+          pr_comment: '¡Gracias por tu PR! 🚀\n\nEstaremos revisándolo en breve.'
+          issue_label: "triage"
+          pr_label: "review-needed"
+          add_labels: "true"
