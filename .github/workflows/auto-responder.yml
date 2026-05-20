@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Run Auto-Responder
-        uses: ./.github/actions/automatic-answer
+        uses: ./
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN || '' }}
